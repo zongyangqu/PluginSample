@@ -1,6 +1,8 @@
 package com.example.plugin_core;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 
@@ -23,12 +25,14 @@ import dalvik.system.PathClassLoader;
 
 public class LoadUtil {
 
-    private  static String apkPath;
+    private String apkPath;
+    private PackageInfo packageInfo;
 
 
 
-    public static void loadClass(Context context){
-        apkPath = context.getCacheDir() + "/plugin.apk";
+    public  void loadClass(Context context,String apkPath){
+        this.apkPath = apkPath;
+        //apkPath = context.getCacheDir() + "/plugin.apk";
         if(context == null){
             return;
         }
@@ -83,22 +87,76 @@ public class LoadUtil {
      * @param context
      * @return
      */
-    public static Resources loadPluginResource(Context context){
-        apkPath = context.getCacheDir() + "/plugin.apk";
+    public  Resources loadPluginResource(Context context){
         Resources resources = null;
         try {
+            //获取到插件的包信息类
+            //获取到包管理器
+            PackageManager packageManager = context.getPackageManager();
+            packageInfo = packageManager.getPackageArchiveInfo(
+                    apkPath, PackageManager.GET_ACTIVITIES);
             AssetManager assetManager = AssetManager.class.newInstance();
-            //通过反射获取到 addAssetPath
-            Method addAssetPath = assetManager.getClass().getDeclaredMethod("addAssetPath",String.class);
+            //通过反射获取到addAssetPath
+            Method addAssetPath = assetManager.getClass().getDeclaredMethod("addAssetPath", String.class);
             addAssetPath.setAccessible(true);
             //执行这个方法
             addAssetPath.invoke(assetManager,apkPath);
-            resources = new Resources(assetManager,context.getResources().getDisplayMetrics(),context.getResources().getConfiguration());
+            resources = new Resources(assetManager,context.getResources().getDisplayMetrics(),
+                    context.getResources().getConfiguration());
             return resources;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
+
+    public PackageInfo getPackageInfo() {
+        return packageInfo;
+    }
+
+    //    /**
+//     * 将插件先移动到私有路径下面
+//     * @param context
+//     */
+//    public static void copyOnPrivateFile(Context context){
+//        //将这个修复包先移动到一个安全的位置-私有路径 /data/datd/com.maniu.mn_2020_12_15/
+//        File odex = context.getDir("plugin", Context.MODE_PRIVATE);
+//        //定义补丁的名字
+//        String name = "plugin.apk";
+//        //获取到补丁复制过去的完整File对象 /data/datd/com.maniu.mn_2020_12_15/odex/out.dex
+//        File file = new File(odex.getAbsoluteFile(),name);
+//        //复制过去的时候  要先判断一下  目的地是否已经存在这个名字的文件
+//        if(file.exists()){
+//            // 删除重名的
+//            file.delete();
+//        }
+//        String filePath = file.getAbsolutePath();
+//        //创建文件输入输出流
+//        FileInputStream is =null;
+//        FileOutputStream os = null;
+//        try {
+//            //起点
+//            is = new FileInputStream(new File(Environment.getExternalStorageDirectory(), name));
+//            //终点
+//            os = new FileOutputStream(filePath);
+//            int len = 0;
+//            byte[] buffer = new byte[1024];
+//            while ((len = is.read(buffer)) != -1) {
+//                os.write(buffer, 0, len);
+//            }
+//        } catch (IOException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        } finally {
+//            try {
+//                os.close();
+//                is.close();
+//            } catch (IOException e) {
+//                // TODO Auto-generated catch block
+//                e.printStackTrace();
+//            }
+//        }
+//    }
+
 
 }

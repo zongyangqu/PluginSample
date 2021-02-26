@@ -9,6 +9,8 @@ import okhttp3.Response;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -27,31 +29,49 @@ import java.lang.reflect.Proxy;
 
 public class MainActivity extends AppCompatActivity {
 
-    File apk;
+    File apkLogin;
+    File apkMerber;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.e("MN-------->",getClassLoader().getClass().getName());
-        apk = new File(getCacheDir() + "/plugin.apk");
+//        Log.e("MN-------->",getClassLoader().getClass().getName());
+        apkLogin = new File(getCacheDir() + "/plugin_login.apk");
+        apkMerber = new File(getCacheDir() + "/plugin_member.apk");
     }
 
-    public void getPluginMethod(View view) {
-        LoadUtil.loadClass(this);
-        //proxyTest();
-//        getPluginClass();
-        jumpActivity();
-
-
+    public void jumpLogin(View view) {
+        loadPluginApk(getCacheDir() + "/plugin_login.apk");
     }
 
-    public void jumpActivity(){
+    public void jumpMember(View view) {
+        loadPluginApk(getCacheDir() + "/plugin_member.apk");
+    }
+
+    public void loadPluginApk(String apkPath){
+        //去加载member的插件
+        LoadUtil loadUtil = new LoadUtil();
+        loadUtil.loadClass(getApplicationContext(),apkPath);
+        //用一个资源对象去管理member模块的资源
+        Resources resources = loadUtil.loadPluginResource(getApplicationContext());
+        MyApplication myApplication = (MyApplication) getApplication();
+        myApplication.setResources(resources);
+        //获取到插件中清单文件中的第一个Activity  也可以写全类名 如“com.example.login.LoginActivity
+        ActivityInfo[] activities = loadUtil.getPackageInfo().activities;
+        String activityName = activities[0].name;
+        //跳转到插件中的Activity里面去
+        jumpActivity(activityName);
+    }
+
+
+    public void jumpActivity(String activityName){
         try {
             //跳转Activity要做的事情
             // 1.AMS要检查目的地的Activity是否进行了清单注册
             // 2.AMS要通知ActivityThread来创建目的地的类 然后去启动生命周期
-            Class<?> aClass = getClassLoader().loadClass("com.example.login.LoginActivity");
-            startActivity(new Intent(this,aClass));
+            Class<?> aClass = getClassLoader().loadClass(activityName);
+            Intent intent = new Intent(this, aClass);
+            startActivity(intent);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -76,10 +96,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void download(final View v) {
+    public void downloadLogin(View view) {
+        downloadPluginApk(view,"https://xiaohe-online.oss-cn-beijing.aliyuncs.com/Emulation/audios/homework/plugin_login.apk",apkLogin);
+    }
+
+    public void downloadMenber(View view) {
+        downloadPluginApk(view,"https://xiaohe-online.oss-cn-beijing.aliyuncs.com/Emulation/audios/homework/plugin_member.apk",apkMerber);
+    }
+
+    public void downloadPluginApk(final View v, String apkUrl, final File apkFile) {
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
-                .url("https://xiaohe-online.oss-cn-beijing.aliyuncs.com/Emulation/audios/homework/plugin.apk")
+                .url(apkUrl)
+               // .url("https://xiaohe-online.oss-cn-beijing.aliyuncs.com/Emulation/audios/homework/plugin.apk")
                 .get()
                 .build();
         client.newCall(request)
@@ -97,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
                         try {
-                            FileOutputStream fos = new FileOutputStream(apk);
+                            FileOutputStream fos = new FileOutputStream(apkFile);
                             fos.write(response.body().bytes());
                             fos.close();
                         } catch (Exception e) {
@@ -112,4 +141,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
     }
+
+
 }

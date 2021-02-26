@@ -26,8 +26,6 @@ public class MyApplication extends Application {
         try {
             hookUtil.hookStartActivity();
             hookUtil.hookLaunchActivity();
-            //调用了加载插件资源的方法
-            resources = LoadUtil.loadPluginResource(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -38,4 +36,9 @@ public class MyApplication extends Application {
         //如果插件中的资源对象加载到了，就返回这个插件中的资源对象   否则就返回宿主中的资源对象
         return resources == null?super.getResources():resources;
     }
+
+    public void setResources(Resources resources) {
+        this.resources = resources;
+    }
+
 }
